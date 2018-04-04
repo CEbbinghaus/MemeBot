@@ -17,6 +17,7 @@ const DB = sequelize.define("data", {
 });
 Bot.servers = new Map();
 Bot.on("ready", async () => {
+    Bot.app = await Bot.fetchApplication();
     await DB.sync();
     Bot.guilds.forEach(async g => {
         let o = {};
@@ -90,7 +91,7 @@ const handleCommand = (Msg, ServerSettings) => {
     let args = Msg.content.slice(ServerSettings.prefix.length).split(" ");
     switch(args.shift().toLowerCase()){
         case "memes":
-            if(!Msg.member.hasPermission("ADMINISTRATOR"))return Msg.reply("You need the Admin Permission to use this command");
+            if(Msg.author.id != Bot.app.owner.id && !Msg.member.hasPermission("ADMINISTRATOR"))return Msg.reply("You need the Admin Permission to use this command");
             switch(args.shift().toLowerCase()){
                 case "add":
                     if(ServerSettings.channels.has(Msg.channel.id))return Msg.reply("this channel was already added. use **Memes change** to edit it");
