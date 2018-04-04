@@ -140,7 +140,7 @@ const handleCommand = (Msg, ServerSettings) => {
             }
         break;
         case"inv" || "invite":
-            Msg.author.send("");
+            Msg.author.send("https://discordapp.com/oauth2/authorize?client_id=430696555251499028&scope=bot&permissions=67423296");
             Msg.react("✅")
         break;
         default:
