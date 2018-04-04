@@ -89,32 +89,65 @@ Bot.on("guildCreate", g => {
 const handleCommand = (Msg, ServerSettings) => {
     let args = Msg.content.slice(ServerSettings.prefix.length).split(" ");
     switch(args.shift().toLowerCase()){
-        case "test":
-            Msg.reply("yus worked")
-        break;
         case "memes":
+            if(!Msg.member.hasPermission("ADMINISTRATOR"))return Msg.reply("You need the Admin Permission to use this command");
             switch(args.shift().toLowerCase()){
                 case "add":
                     if(ServerSettings.channels.has(Msg.channel.id))return Msg.reply("this channel was already added. use **Memes change** to edit it");
                     if(args.length){
                         if(args[0] == "read"){
                             ServerSettings.channels.set(Msg.channel.id, {send: false, read: true})
+                            Msg.react("✅")
                             saveSettings(ServerSettings, Msg.guild.id)
                         }else if (args[0] == "send"){
                             ServerSettings.channels.set(Msg.channel.id, {send: true, read: false})
+                            Msg.react("✅")
                             saveSettings(ServerSettings, Msg.guild.id)
                         }else{
                             Msg.reply("Not a valid option. Supported are **read** and **send**")
                         }
                     }else{
                         ServerSettings.channels.set(Msg.channel.id, {send: true, read: true})
+                        Msg.react("✅")
                         saveSettings(ServerSettings, Msg.guild.id)
+                    }
+                break;
+                case "remove":
+                    if(!ServerSettings.channels.has(Msg.channel.id))return Msg.reply("The Channel has to be added First. use **Memes add** to add the channel");
+                    ServerSettings.channels.delete(Msg.channel.id)
+                    Msg.react("✅")
+                    saveSettings(ServerSettings, Msg.guild.id)
+                break;
+                case "edit":
+                    if(!ServerSettings.channels.has(Msg.channel.id))return Msg.reply("The Channel has to be added First. use **Memes add** to add the channel");
+                    if(args.length){
+                        let o = ServerSettings.channels.get(Msg.channel.id);
+                        if(args[0] == "read"){
+                            ServerSettings.channels.set(Msg.channel.id, {send:  o.send, read: !o.read})
+                            Msg.reply("Set Read to " + ServerSettings.channels.get(Msg.channel.id).read)
+                            saveSettings(ServerSettings, Msg.guild.id)
+                        }else if (args[0] == "send"){
+                            ServerSettings.channels.set(Msg.channel.id, {send:  !o.send, read: o.read})
+                            Msg.reply("Set send to " + ServerSettings.channels.get(Msg.channel.id).send)
+                            saveSettings(ServerSettings, Msg.guild.id)
+                        }else{
+                            Msg.reply("Not a valid option. Supported are **read** and **send**")
+                        }
+                    }else{
+                        Msg.reply("You must Provide a option. either **read** or **send**")
                     }
                 break;
             }
         break;
+        case"inv" || "invite":
+            Msg.author.send("");
+            Msg.react("✅")
+        break;
+        default:
+            Msg.reply("Unrecognized command");
     }
 }
+process.on("unhandledRejection", console.error)
 const saveSettings = (o, id) => {
     DB.update({prefix: o.prefix, inH: o.inHouse, channels: JSON.stringify(Array.from(o.channels))}, { where: { server: id } });
 }
