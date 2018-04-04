@@ -15,9 +15,14 @@ const DB = sequelize.define("data", {
     inH: sql.BOOLEAN,
     channels: sql.TEXT
 });
+const MMS = sequelize.define("memes", {
+    meme: sql.STRING,
+    server: sql.STRING
+});
 Bot.servers = new Map();
 Bot.on("ready", async () => {
     Bot.app = await Bot.fetchApplication();
+    await MMS.sync();
     await DB.sync();
     Bot.guilds.forEach(async g => {
         let o = {};
@@ -49,8 +54,8 @@ Bot.on("message", Msg => {
     if(Msg.content.startsWith(ServerSettings.prefix)){
         handleCommand(Msg, ServerSettings);
     }else{
-        let k = new Map();
         if(ServerSettings.channels.has(Msg.channel.id) && ServerSettings.channels.get(Msg.channel.id).read == true && Msg.attachments.first().height > 0){
+            MMS.create({meme: Msg.attachments.first().url, server: Msg.guild.id});
             Bot.servers.forEach((s, sid) => {
                 if(sid != Msg.guild.id || ServerSettings.inHouse){
                     s.channels.forEach((c, id) => {
@@ -60,7 +65,6 @@ Bot.on("message", Msg => {
                     })
                 }
             })
-            console.log("Image sent")
         }
     }
     
