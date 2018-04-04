@@ -1,14 +1,41 @@
 const {Client, RichEmbed, Attachment} = require("discord.js");
+const sql = require("sequelize");
 let settings = require("./settings.json")
 const Bot = new Client();
+const sequelize = new sql('database', 'user', 'password', {
+    operatorsAliases: false,
+    host: 'localhost',
+    dialect: 'sqlite',
+    logging: false,
+    storage: 'storage.sqlite',
+});
+const DB = sequelize.define("data", {
+    server: sql.TEXT,
+    prefix: sql.STRING,
+    inH: sql.BOOLEAN,
+    channels: sql.TEXT
+});
 Bot.servers = new Map();
-Bot.on("ready", () => {
-    console.log(settings)
-    Bot.guilds.forEach(g => {
+Bot.on("ready", async () => {
+    await DB.sync();
+    Bot.guilds.forEach(async g => {
         let o = {};
-        o.prefix = settings.prefix;
-        o.channels = new Map();
-        o.inHouse = false;
+        let dg = await DB.findOne({ where: { server: g.id } });
+        if(dg){
+            o.prefix = dg.prefix;
+            o.channels = new Map(JSON.parse(dg.channels))
+            o.inHouse = dg.inH;
+        }else{
+            o.prefix = settings.prefix;
+            o.channels = new Map();
+            o.inHouse = false;
+            await DB.create({
+                server: g.id,
+                prefix: o.prefix,
+                inH: false,
+                channels: JSON.stringify(Array.from(o.channels)),
+            });
+        }
         o.guild = g;
         Bot.servers.set(g.id, o);
     })
@@ -24,11 +51,13 @@ Bot.on("message", Msg => {
         let k = new Map();
         if(ServerSettings.channels.has(Msg.channel.id) && ServerSettings.channels.get(Msg.channel.id).read == true && Msg.attachments.first().height > 0){
             Bot.servers.forEach((s, sid) => {
-                s.channels.forEach((c, id) => {
-                    if(id != Msg.channel.id && c.send){
-                        Bot.guilds.get(sid).channels.get(id).send(new Attachment(Msg.attachments.first().url))
-                    }
-                })
+                if(sid != Msg.guild.id || ServerSettings.inHouse){
+                    s.channels.forEach((c, id) => {
+                        if(id != Msg.channel.id && c.send){
+                            Bot.guilds.get(sid).channels.get(id).send(new Attachment(Msg.attachments.first().url))
+                        }
+                    })
+                }
             })
             console.log("Image sent")
         }
@@ -70,17 +99,23 @@ const handleCommand = (Msg, ServerSettings) => {
                     if(args.length){
                         if(args[0] == "read"){
                             ServerSettings.channels.set(Msg.channel.id, {send: false, read: true})
+                            saveSettings(ServerSettings, Msg.guild.id)
                         }else if (args[0] == "send"){
                             ServerSettings.channels.set(Msg.channel.id, {send: true, read: false})
+                            saveSettings(ServerSettings, Msg.guild.id)
                         }else{
                             Msg.reply("Not a valid option. Supported are **read** and **send**")
                         }
                     }else{
                         ServerSettings.channels.set(Msg.channel.id, {send: true, read: true})
+                        saveSettings(ServerSettings, Msg.guild.id)
                     }
                 break;
             }
         break;
     }
+}
+const saveSettings = (o, id) => {
+    DB.update({prefix: o.prefix, inH: o.inHouse, channels: JSON.stringify(Array.from(o.channels))}, { where: { server: id } });
 }
 Bot.login(settings.token);
