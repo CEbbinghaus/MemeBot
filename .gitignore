@@ -1,4 +1,5 @@
 settings.json
 node_modules
 package-lock.json
-storage\.sqlite
+storage.sqlite
+            

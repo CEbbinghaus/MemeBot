@@ -144,6 +144,12 @@ const handleCommand = (Msg, ServerSettings) => {
                 break;
             }
         break;
+        case "prefix":
+            if(Msg.author.id != Bot.app.owner.id && !Msg.member.hasPermission("ADMINISTRATOR"))return Msg.reply("You need the Admin Permission to use this command");
+            ServerSettings.prefix = args[0];
+            saveSettings(ServerSettings, Msg.guild.id)
+            Msg.reply("Prefix was set to: **" + ServerSettings.prefix + "**")
+        break;
         case"inv" || "invite":
             Msg.author.send("https://discordapp.com/oauth2/authorize?client_id=430696555251499028&scope=bot&permissions=67423296");
             Msg.react("✅")
